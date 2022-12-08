@@ -2,140 +2,222 @@ package aoc.day08;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Scanner;
 
 public class Day08 {
 	public static void main(String[] args) throws FileNotFoundException {
-		Tree[][] trees = read();
+		TreeGrid grid = read();
 
-		visibilityFromLeft(trees);
-		visibilityFromRight(trees);
-		visibilityFromTop(trees);
-		visibilityFromBottom(trees);
-		int answer1 = countVisibleFromEdges(trees);
-
+		leftToRight(grid);
+		topToBottom(grid);
+		int answer1 = visibleFromEdges(grid);
 		System.out.println("Answer1: " + answer1); // 1428881
 
-		System.out.println("Answer2: " + 0);
+		System.out.println(grid);
+		int answer2 = mostScenic(grid);
+		System.out.println("Answer2: " + answer2);
 
 	}
 
-	private static void visibilityFromLeft(Tree[][] trees) {
-		for (int y = 0; y < trees.length; y++) {
+	private static void leftToRight(TreeGrid grid) {
+		for (int i = 0; i < grid.size; i++) {
+			LinkedList<Tree> row = grid.getRow(i);
+
 			int height = -1;
-			for (int x = 0; x < trees[y].length; x++) {
-				Tree tree = trees[y][x];
-				if (tree != null) {
-					if (height < tree.height) {
-						tree.visibilityLeft = true;
-						height = tree.height;
-					}
+			ListIterator<Tree> iterator = row.listIterator();
+
+			while (iterator.hasNext()) {
+				Tree tree = (Tree) iterator.next();
+				if (height < tree.height) {
+					tree.visibilityLeft = true;
+					height = tree.height;
 				}
 			}
+
+			height = -1;
+			while (iterator.hasPrevious()) {
+				Tree tree = (Tree) iterator.previous();
+				if (height < tree.height) {
+					tree.visibilityRight = true;
+					height = tree.height;
+				}
+			}
+
 		}
 	}
 
-	private static void visibilityFromRight(Tree[][] trees) {
-		for (int y = 0; y < trees.length; y++) {
+	private static void topToBottom(TreeGrid grid) {
+		for (int i = 0; i < grid.size; i++) {
+			LinkedList<Tree> column = grid.getColumn(i);
+
 			int height = -1;
-			for (int x = trees[y].length - 1; 0 <= x; x--) {
-				Tree tree = trees[y][x];
-				if (tree != null) {
-					if (height < tree.height) {
-						tree.visibilityRight = true;
-						height = tree.height;
-					}
+			ListIterator<Tree> iterator = column.listIterator();
+
+			while (iterator.hasNext()) {
+				Tree tree = (Tree) iterator.next();
+				if (height < tree.height) {
+					tree.visibilityTop = true;
+					height = tree.height;
 				}
 			}
+
+			height = -1;
+			while (iterator.hasPrevious()) {
+				Tree tree = (Tree) iterator.previous();
+				if (height < tree.height) {
+					tree.visibilityBottom = true;
+					height = tree.height;
+				}
+			}
+
 		}
 	}
 
-	private static void visibilityFromTop(Tree[][] trees) {
-		int size = trees.length;
-		for (int x = 0; x < size; x++) {
-			int height = -1;
-			for (int y = 0; y < size; y++) {
-				Tree tree = trees[y][x];
-				if (tree != null) {
-					if (height < tree.height) {
-						tree.visibilityTop = true;
-						height = tree.height;
-					}
+	private static int visibleFromEdges(TreeGrid grid) {
+		int visibleTreeCount = 0;
+		for (int i = 0; i < grid.size; i++) {
+			for (int k = 0; k < grid.size; k++) {
+				if (grid.getTree(k, i).isVisible()) {
+					visibleTreeCount++;
 				}
 			}
 		}
+		return visibleTreeCount;
 	}
 
-	private static void visibilityFromBottom(Tree[][] trees) {
-		int size = trees.length;
-		for (int x = 0; x < size; x++) {
-			int height = -1;
-			for (int y = size - 1; 0 <= y; y--) {
-				Tree tree = trees[y][x];
-				if (tree != null) {
-					if (height < tree.height) {
-						tree.visibilityBottom = true;
-						height = tree.height;
-					}
+	private static int mostScenic(TreeGrid grid) {
+		int mostScenic = 0;
+		for (int row = 1; row < grid.size - 1; row++) {
+			for (int column = 1; column < grid.size - 1; column++) {
+
+				int height = grid.getTree(column, row).height;
+
+				LinkedList<Tree> rowList = grid.getRow(row);
+				int leftIndex = leftIndex(rowList.subList(0, column), height);
+				int rightIndex = rightIndex(rowList.subList(column + 1, grid.size), height);
+				System.out.println(rowList + " " + leftIndex + ":" + rightIndex);
+
+				LinkedList<Tree> columnList = grid.getColumn(column);
+				int topIndex = leftIndex(columnList.subList(0, row), height);
+				int bottomIndex = rightIndex(columnList.subList(row + 1, grid.size), height);
+				System.out.println(columnList + " " + topIndex + ":" + bottomIndex);
+
+				int nextMostScenic = leftIndex * rightIndex * topIndex * bottomIndex;
+				System.out.println(row + ":" + column + " - " + nextMostScenic + " "
+						+ Arrays.asList(leftIndex, rightIndex, topIndex, bottomIndex));
+
+				if (nextMostScenic > mostScenic) {
+					mostScenic = nextMostScenic;
 				}
-			}
-		}
-	}
-
-	private static int countVisibleFromEdges(Tree[][] trees) {
-		int visible = 0;
-		for (int i = 0; i < trees.length; i++) {
-			for (int k = 0; k < trees[i].length; k++) {
-				if (trees[i][k] != null) {
-					System.out.print(trees[i][k]);
-					if (trees[i][k].isVisible()) {
-						visible++;
-					}
-				}
-			}
-			System.out.println();
-		}
-		return visible;
-	}
-
-	private static int mostScenic(Tree[][] trees) {
-		for (int y = 0; y < trees.length; y++) {
-			for (int x = 0; x < trees[y].length; x++) {
-				Tree tree = trees[y][x];
-				int treeScore = 0;
-				if (tree == null)
-					continue;
-
-				// check left
-				int xis = 1;
-				for (int xi = x - 1; 0 <= xi; xi--) {
-
-				}
-				treeScore *= xis;
 
 			}
 		}
 
-		return 0;
+		return mostScenic;
 	}
 
-	private static Tree[][] read() throws FileNotFoundException {
-		Tree[][] trees = new Tree[6][6];
+	private static int leftIndex(List<Tree> list, int height) {
+		ListIterator<Tree> listIterator = list.listIterator();
+		while (listIterator.hasNext()) {
+			listIterator.next();
+		}
 
-		File file = new File("src/aoc/day08/Day08-example.txt");
+		int index = 0;
+		while (listIterator.hasPrevious()) {
+			index++;
+			Tree tree = listIterator.previous();
+			if (tree.height >= height) {
+				break;
+			}
+		}
+		return index;
+	}
+
+	private static int rightIndex(List<Tree> list, int height) {
+		ListIterator<Tree> listIterator = list.listIterator();
+
+		int index = 0;
+		while (listIterator.hasNext()) {
+			index++;
+			Tree tree = listIterator.next();
+			if (tree.height >= height) {
+				break;
+			}
+		}
+		return index;
+	}
+
+	private static TreeGrid read() throws FileNotFoundException {
+		TreeGrid grid = new TreeGrid(99);
+
+		File file = new File("src/aoc/day08/Day08-input.txt");
 		try (Scanner scanner = new Scanner(file)) {
 			int i = 0;
 			while (scanner.hasNextLine()) {
 				String[] treeLine = scanner.nextLine().split("");
 
 				for (int k = 0; k < treeLine.length; k++) {
-					trees[i][k] = new Tree(Integer.parseInt(treeLine[k]));
+					grid.setTree(k, i, Integer.parseInt(treeLine[k]));
 				}
 				i++;
 			}
 		}
 
-		return trees;
+		return grid;
+	}
+}
+
+class TreeGrid {
+	public final int size;
+	private Tree[][] trees; // row, column
+
+	public TreeGrid(int size) {
+		this.size = size;
+		this.trees = new Tree[size][size];
+	}
+
+	public Tree getTree(int column, int row) {
+		return this.trees[row][column];
+	}
+
+	public void setTree(int x, int y, int height) {
+		this.trees[y][x] = new Tree(height);
+	}
+
+	public LinkedList<Tree> getRow(int row) {
+		LinkedList<Tree> list = new LinkedList<>();
+		for (int i = 0; i < this.size; i++) {
+			list.add(trees[row][i]);
+		}
+		return list;
+	}
+
+	public LinkedList<Tree> getColumn(int column) {
+		LinkedList<Tree> list = new LinkedList<>();
+		for (int i = 0; i < this.size; i++) {
+			list.add(trees[i][column]);
+		}
+		return list;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < this.size; i++) {
+			for (int k = 0; k < this.size; k++) {
+				Tree tree = trees[i][k];
+				if (tree == null) {
+					tree = new Tree(0);
+				}
+				builder.append(tree);
+			}
+			builder.append("\n");
+		}
+		return builder.toString();
 	}
 }
 
@@ -157,11 +239,11 @@ class Tree {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("[").append(height).append("]");
-		builder.append(visibilityLeft ? "*" : " ");
-		builder.append(visibilityRight ? "*" : " ");
-		builder.append(visibilityTop ? "*" : " ");
-		builder.append(visibilityBottom ? "*" : " ");
-		return builder.toString();
+		builder.append("[").append(height);
+//		builder.append(":").append(visibilityLeft ? "*" : " ");
+//		builder.append(visibilityRight ? "*" : " ");
+//		builder.append(visibilityTop ? "*" : " ");
+//		builder.append(visibilityBottom ? "*" : " ");
+		return builder.append("]").toString();
 	}
 }
